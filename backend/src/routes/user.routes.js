@@ -1,0 +1,21 @@
+import { Router } from 'express';
+import * as c from '../controllers/user.controller.js';
+import { validate } from '../middlewares/validate.js';
+import { requireAuth } from '../middlewares/auth.js';
+import { authLimiter } from '../middlewares/rateLimiter.js';
+import { idParam } from '../validators/common.js';
+import * as v from '../validators/user.validator.js';
+import * as av from '../validators/auth.validator.js';
+import * as lv from '../validators/learning.validator.js';
+
+const r = Router();
+r.use(requireAuth);
+r.patch('/', validate({ body: v.updateProfile }), c.updateProfile);
+r.put('/prefs', validate({ body: v.prefs }), c.updatePrefs);
+r.post('/password', authLimiter, validate({ body: av.changePassword }), c.changePassword);
+r.get('/notifications', validate({ query: v.notificationList }), c.notifications);
+r.post('/notifications/:id/read', c.markRead);
+r.get('/learning', validate({ query: lv.myLearning }), c.learning);
+r.get('/certificates', c.certificates);
+r.get('/certificates/:id', validate({ params: idParam }), c.certificate);
+export default r;

@@ -1,0 +1,49 @@
+# Local / single-server stack: API (+ in-process worker) + MongoDB replica set + Redis.
+# Usage:  cp backend/.env.example backend/.env   (edit secrets)
+#         docker compose up --build              (API on http://localhost:5000)
+#         docker compose run --rm api node src/utils/seed.js
+# Frontend: cd frontend && npm i && npm run dev  (Vite proxies /api to :5000)
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    ports: ['27017:27017']
+    volumes: [mongo_data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # noeviction: BullMQ queues must never be evicted
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory', '256mb', '--maxmemory-policy', 'noeviction']
+    ports: ['6379:6379']
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      mongo: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    env_file: [./backend/.env]
+    environment:
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/learnsphere?replicaSet=rs0
+      REDIS_URL: redis://redis:6379
+      START_WORKER: 'true'
+    ports: ['5000:5000']
+
+volumes:
+  mongo_data:
+  redis_data:

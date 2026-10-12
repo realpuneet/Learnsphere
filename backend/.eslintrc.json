@@ -1,0 +1,1 @@
+{ "root": true, "env": { "node": true, "es2022": true, "jest": true }, "parserOptions": { "ecmaVersion": 2023, "sourceType": "module" }, "extends": ["eslint:recommended"], "rules": { "no-unused-vars": ["warn", { "argsIgnorePattern": "^_|next" }], "no-console": "off" } }

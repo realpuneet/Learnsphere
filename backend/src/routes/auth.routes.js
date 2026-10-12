@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import * as c from '../controllers/auth.controller.js';
+import { validate } from '../middlewares/validate.js';
+import { requireAuth } from '../middlewares/auth.js';
+import { authLimiter, otpLimiter } from '../middlewares/rateLimiter.js';
+import * as v from '../validators/auth.validator.js';
+
+const r = Router();
+r.post('/register', authLimiter, validate({ body: v.register }), c.register);
+r.post('/login', authLimiter, validate({ body: v.login }), c.login);
+r.post('/forgot-password', otpLimiter, validate({ body: v.forgotPassword }), c.forgotPassword);
+r.post('/reset-password', authLimiter, validate({ body: v.resetPassword }), c.resetPassword);
+r.get('/providers', c.providers);
+r.post('/google', authLimiter, validate({ body: v.googleLogin }), c.googleLogin);
+r.get('/linkedin', authLimiter, c.linkedinStart);
+r.get('/linkedin/callback', authLimiter, c.linkedinCallback);
+r.post('/refresh', c.refresh);
+r.post('/logout', c.logout);
+r.get('/me', requireAuth, c.me);
+export default r;
